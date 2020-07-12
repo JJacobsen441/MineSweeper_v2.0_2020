@@ -182,9 +182,6 @@ namespace MineSweeper
         {
             float rad = (float)(Math.Atan2(pos.Y - position_tank.Y, pos.X - position_tank.X));
             angle = (float)(rad / Math.PI * 180) + (rad > 0 ? 0 : 360);
-
-            if (pos.Y > position_tank.Y && angle < 0.0f)
-                angle = 360 - angle;
         }
 
         private void CalcSetup(float rot, float clo, out double[] input, out double[] target) 
