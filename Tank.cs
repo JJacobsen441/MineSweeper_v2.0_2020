@@ -330,7 +330,7 @@ namespace MineSweeper
             line_closest = new List<Vector2>();
             r_pos = g.RedPositions;
             currentState = Keyboard.GetState();
-            if (currentState.IsKeyDown(Keys.R))//højre, pres på venstre
+            if (currentState.IsKeyDown(Keys.R))
             {
                 position_tank = new Vector2(30 * 20f, 0 * 20f);
                 rotation = 90f;
