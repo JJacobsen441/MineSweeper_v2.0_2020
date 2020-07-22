@@ -9,23 +9,28 @@ using System;
 using System.Collections.Generic;
 using System.Net.NetworkInformation;
 using System.Text;
+using static MineSweeper.Game1;
 
 namespace MineSweeper
 {
     class Tank
     {
-        int[] neurons = new int[] { 2, 30, 3 };
-        private enum DOTS { RED, BLUE}
+        int[] neurons = new int[] { 5, 100, 3 };
+        
         private KeyboardState currentState;
 
         private Texture2D tank;
         private Vector2 position_tank;
         private Vector2 origin;
-        private Vector2 vec_closest = new Vector2();
+        private Vector2 vec_closest_r = new Vector2();
+        private Vector2 vec_closest_b = new Vector2();
         private float[] wheels = new float[] { .5f, .5f };
         private float rotation = 90f;
         private float speed;
-        private float dir_closest;
+        private float dir_closest_r;
+        private float dir_closest_b;
+        private float dist_r;
+        private float dist_b;
 
         private Texture2D pixel_black;
         private Texture2D pixel_red;
@@ -142,7 +147,7 @@ namespace MineSweeper
                     x = type ? xa : xb;
                     y = (float)(x * scale);
                     Vector2 v = new Vector2((float)xa + x_left, (float)y + y_top);
-                    if(pos.X == vec_closest.X && pos.Y == vec_closest.Y)
+                    if(pos.X == vec_closest_r.X && pos.Y == vec_closest_r.Y)
                         line_closest.Add(v);
                     else
                         lines.Add(v);
@@ -150,9 +155,10 @@ namespace MineSweeper
                 }
             }
         }
-        private Vector2 ClosestDot(DOTS dots, out float angle)
+        private Vector2 ClosestDot(DOTS dots)
         {
             r_pos = g.RedPositions;
+            b_pos = g.BluePositions;
             List<Vector2> v_pos = dots == DOTS.RED ? r_pos : b_pos;
 
             Vector2 closest = new Vector2(0f, 0f);
@@ -161,7 +167,7 @@ namespace MineSweeper
             float length, height;
             bool type;
 
-            angle = 0.0f;
+            //float angle = 0.0f;
             foreach (Vector2 pos in v_pos)
             {
                 F_Setup(pos, out x_left, out x_right, out y_top, out y_bottom, out length, out height, out type);
@@ -171,35 +177,71 @@ namespace MineSweeper
                 {
                     hyp = hyp_tmp;
                     closest = pos;
-                    
-                    AngleDot(pos, out angle);
+
+                    //AngleDot(pos, out angle);
                 }
             }
             return closest;
+        }
+        private void AngleDist(Vector2 vec, out float angle, out float dist)
+        {
+            int x_left, x_right, y_top, y_bottom;
+            float length, height;
+            bool type;
+            
+            F_Setup(vec, out x_left, out x_right, out y_top, out y_bottom, out length, out height, out type);
+
+            dist = (float)Math.Sqrt(Math.Pow(length, 2) + Math.Pow(height, 2));
+            AngleDot(vec, out angle);            
         }
 
         private void AngleDot(Vector2 pos, out float angle)
         {
             float rad = (float)(Math.Atan2(pos.Y - position_tank.Y, pos.X - position_tank.X));
-            angle = (float)(rad / Math.PI * 180) + (rad > 0 ? 0 : 360);
+            angle = (float)(rad / Math.PI * 180) + (rad > 0 ? 0 : 360);           
         }
 
-        private void CalcSetup(float rot, float clo, out double[] input, out double[] target) 
+        private void CalcSetup(float rot, float clo_r, float clo_b, float d_r, float d_b, out double[] input, out double[] target) 
         {
-            input = new double[] { (rot / 360f) * (.9f - .1f) + .1f, (clo / 360f) * (.9f - .1f) + .1f };
+            this.dist_r = (float)(d_r / (Math.Sqrt((int)Math.Pow(Ground.Height * 20, 2) + Math.Pow(Ground.Width * 20, 2)))) * (.9f - .1f) + .1f;
+            this.dist_b = (float)(d_b / (Math.Sqrt((int)Math.Pow(Ground.Height * 20, 2) + Math.Pow(Ground.Width * 20, 2)))) * (.9f - .1f) + .1f;
+            input = new double[] { 
+                (rot / 360f) * (.9f - .1f) + .1f, 
+                (clo_r / 360f) * (.9f - .1f) + .1f, 
+                dist_r,
+                (clo_b / 360f) * (.9f - .1f) + .1f, 
+                dist_b };
             
-            bool largerthan_r = rot > 180;
+            bool largerthan = rot > 180;
             float a = rot > 180 ? rot - 180 : rot + 180;
             float h = Math.Max(rot, a);
             float l = Math.Min(rot, a);
-            float rot_diff = rot - clo;
+            float rot_diff_r = rot - clo_r;
+            float rot_diff_b = rot - clo_b;
 
-            if ((rot_diff >= 0 && rot_diff < 5) || (rot_diff < 0 && rot_diff > -5))
+            if (dist_b < .15f)
+            {
+                //if ((rot_diff_b >= 0 && rot_diff_b < 10) || (rot_diff_b < 0 && rot_diff_b > -10))
+                //    target = new double[] { .1f, .9f, .1f };
+                if ((largerthan && clo_b < h && clo_b > l) || (!largerthan && (clo_b > h || clo_b < l)))
+                    target = new double[] { .5f, .1f, .1f };//højre, pres på venstre
+                else
+                    target = new double[] { .1f, .1f, .5f };//venstre, pres på højre
+            }
+            else if ((rot_diff_r >= 0 && rot_diff_r < 10) || (rot_diff_r < 0 && rot_diff_r > -10))
                 target = new double[] { .1f, .9f, .1f };
-            else if ((largerthan_r && clo < h && clo > l) || (!largerthan_r && (clo > h || clo < l)))
+            else if ((largerthan && clo_r < h && clo_r > l) || (!largerthan && (clo_r > h || clo_r < l)))
                 target = new double[] { .1f, .1f, .9f };//venstre, pres på højre
             else 
-                target = new double[] { .9f, .1f, .1f };//højre, pres på venstre            
+                target = new double[] { .9f , .1f, .1f };//højre, pres på venstre            
+
+            //if(dist_b < .25f)
+            //{
+            //    if ((largerthan && clo_b < h && clo_b > l) || (!largerthan && (clo_b > h || clo_b < l)))
+            //        target = new double[] { target[0] * (1.0f - dist_b), .1f, .1f };//venstre, pres på højre
+            //    else
+            //        target = new double[] { .1f, .1f, target[2] * (1.0f - dist_b) };//højre, pres på venstre
+            //}
         }
         private void AdjustWheels() 
         {
@@ -207,7 +249,11 @@ namespace MineSweeper
             double[] input;
             double[] target;
 
-            CalcSetup((int)rotation, (int)dir_closest, out input, out target);
+            //ClosestDot(DOTS.RED, out dir_closest_r, out dist_r);
+            vec_closest_b = ClosestDot(DOTS.BLUE);
+            AngleDist(vec_closest_b, out dir_closest_b, out dist_b);
+            AngleDist(vec_closest_r, out dir_closest_r, out dist_r);
+            CalcSetup((int)rotation, (int)dir_closest_r, (int)dir_closest_b, dist_r, dist_b, out input, out target);
             
             net.EvaluateNet(input, target, out _output);
 
@@ -251,7 +297,7 @@ namespace MineSweeper
         }
 
 
-        private int GetDirection(double[] t) 
+        private int GetDirection(double[] t)
         {
             int c = -1;
             double f = 0.0f;
@@ -265,42 +311,75 @@ namespace MineSweeper
             }
             return c;
         }
-        private bool IsNext(double[] o, double[] n) 
+        
+        private bool IsNext(double[] o, double[] n, float dist_b) 
         {
-            switch (GetDirection(n)) 
+            if (dist_b < .15f)
             {
-                case 0:
-                    return GetDirection(o) == 2;
-                case 1:
-                    return GetDirection(o) == 0;
-                case 2:
-                    return GetDirection(o) == 1;
+                string l_n = n[0] > n[2] ? "right" : "left";
+                string l_o = o[0] > o[2] ? "right" : "left";
+                switch (l_n)
+                {
+                    case "right":
+                        return l_o == "left";
+                    case "left":
+                        return l_o == "right";
+                }
             }
+            else 
+            {
+                switch (GetDirection(n))
+                {
+                    case 0:
+                        return GetDirection(o) == 2;
+                    case 1:
+                        return GetDirection(o) == 0;
+                    case 2:
+                        return GetDirection(o) == 1;
+                }
+            }
+
             throw new Exception();
-        } 
-        private void Train() 
+        }
+        private void Train()
         {
+            int epochs = 1;
+            int iterations = 1;
             Random rand = new Random();
             double[] target;
             double[] input;
-            
-            float r = rand.Next(0, 359);
-            float c = rand.Next(0, 359);
 
-            CalcSetup(r, c, out input, out target);
+            float r = rotation;// rand.Next(0, 359);
+            float c_r;// = rand.Next(0, 359);
+            float c_b;// = rand.Next(0, 359);
+            float dist_r;// = ((float)rand.Next(0, (int)Math.Sqrt(Math.Pow(Ground.Height * 20, 2) + Math.Pow(Ground.Width * 20, 2))) * (.9f - .1f) + .1f);
+            float dist_b;// = ((float)rand.Next(0, (int)Math.Sqrt(Math.Pow(Ground.Height * 20, 2) + Math.Pow(Ground.Width * 20, 2))) * (.9f - .1f) + .1f);
+            //AngleDot(vec_closest_r, out c_r);
+            AngleDist(vec_closest_r, out c_r, out dist_r);
+            AngleDist(vec_closest_b, out c_b, out dist_b);
 
-            for (int i = 0; i < 100; i++)
+            CalcSetup(r, c_r, c_b, dist_r, dist_b, out input, out target);
+
+            for (int i = 0; i < epochs; i++)
             {
                 double[] o = target;
-                while (!IsNext(o, target))
+                
+                while (epochs > 1 && !IsNext(o, target, dist_b))
                 {
                     r = rand.Next(0, 359);
-                    c = rand.Next(0, 359);
+                    c_r = rand.Next(0, 359);
+                    c_b = rand.Next(0, 359);
+                    dist_r = ((float)rand.NextDouble() * (.9f - .1f) + .1f);
+                    dist_b = ((float)rand.NextDouble() * (.9f - .1f) + .1f);
 
-                    CalcSetup(r, c, out input, out target);
-                } 
+                    CalcSetup(r, c_r, c_b, dist_r, dist_b, out input, out target);
+                }
+                //this.net.Eta = .25;
+                //if (epochs == 1 && target[1] > target[0] && target[1] > target[2])
+                iterations = 1;
+                    //this.net.Eta = .40;
 
-                net.TrainNet(input, target, 1);
+                net.TrainNet(input, target, iterations);
             }
         }
         public void Load(GraphicsDeviceManager graphics, ContentManager Content)
@@ -313,12 +392,18 @@ namespace MineSweeper
             pixel_black = Content.Load<Texture2D>("Pixel_2_black");
             pixel_red = Content.Load<Texture2D>("Pixel_2_red");
             font_wheels = Content.Load<SpriteFont>("Game");
-            
+
             r_pos = new List<Vector2>();
+            b_pos = new List<Vector2>();
             lines = new List<Vector2>();
             line_closest = new List<Vector2>();
             r_pos = g.RedPositions;
-            vec_closest = ClosestDot(DOTS.RED, out dir_closest);
+            b_pos = g.BluePositions;
+
+            vec_closest_r = ClosestDot(DOTS.RED);
+            AngleDist(vec_closest_r, out dir_closest_r, out dist_r);
+            vec_closest_b = ClosestDot(DOTS.BLUE);
+            AngleDist(vec_closest_b, out dir_closest_b, out dist_b);
             net = new BNet(neurons, 1, .25f, .9f);//neurons, slope?, learningrate, momentum
             net.Randomize();
         }
@@ -326,9 +411,11 @@ namespace MineSweeper
         {
             // TODO: Add your update logic here
             r_pos = new List<Vector2>();
+            b_pos = new List<Vector2>();
             lines = new List<Vector2>();
             line_closest = new List<Vector2>();
             r_pos = g.RedPositions;
+            b_pos = g.BluePositions;
             currentState = Keyboard.GetState();
             if (currentState.IsKeyDown(Keys.R))
             {
@@ -341,7 +428,9 @@ namespace MineSweeper
                 lines = new List<Vector2>();
                 line_closest = new List<Vector2>();
                 r_pos = g.RedPositions;
-                vec_closest = ClosestDot(DOTS.RED, out dir_closest);
+
+                vec_closest_r = ClosestDot(DOTS.RED);
+                AngleDist(vec_closest_r, out dir_closest_r, out dist_r);
                 net = new BNet(neurons, 1, .25f, .9f);//neurons, slope?, learningrate, momentum
                 net.Randomize();
             }
@@ -351,10 +440,15 @@ namespace MineSweeper
             CalcRotation();
             CalcPosition();
             DrawLines(DOTS.RED);
-            if(currentState.IsKeyDown(Keys.N) || g.Collision((int)position_tank.X, (int)position_tank.Y, vec_closest))
-                vec_closest = ClosestDot(DOTS.RED, out dir_closest);
+            g.Collision((int)position_tank.X, (int)position_tank.Y, vec_closest_r);
+            if (currentState.IsKeyDown(Keys.N) || g.Reset)
+            {
+                float dist;
+                vec_closest_r = ClosestDot(DOTS.RED);
+                g.Reset = false;
+            }
             else
-                AngleDot(vec_closest, out dir_closest);
+                AngleDot(vec_closest_r, out dir_closest_r);
         
             Train();
             AdjustWheels();

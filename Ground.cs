@@ -1,14 +1,17 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using static MineSweeper.Game1;
 
 namespace MineSweeper
 {
     class Ground
     {
+        private KeyboardState currentState;
         public static int Width { get { return 32; } }
         public static int Height { get { return 24; } }
 
@@ -17,17 +20,20 @@ namespace MineSweeper
         Texture2D red;
         Texture2D blue;
 
+        public bool Reset { get; set; }
+
         List<Vector2> red_dots = null;
+        List<Vector2> blue_dots = null;
         string[,] ground = new string [,] {
             {"r", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "r", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
+            {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "b", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
-            {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
-            {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
+            {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "b", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
@@ -35,7 +41,7 @@ namespace MineSweeper
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "r", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
-            {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
+            {"g", "g", "g", "g", "b", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
             {"g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g", "g"},
@@ -64,8 +70,28 @@ namespace MineSweeper
                 return red_dots;
             }
         }
+        public List<Vector2> BluePositions
+        {
+            get
+            {
+                if (blue_dots == null)
+                {
+                    List<Vector2> res = new List<Vector2>();
+                    for (int i = 0; i < Height; i++)
+                    {
+                        for (int j = 0; j < Width; j++)
+                        {
+                            if (ground[i, j] == "b")
+                                res.Add(new Vector2((float)j * 20 + 10, (float)i * 20 + 10));
+                        }
+                    }
+                    blue_dots = res;
+                }
+                return blue_dots;
+            }
+        }
         Vector2 last_collision = new Vector2(-1, -1);
-        public bool Collision(int x, int y, Vector2 closest) 
+        public void Collision(int x, int y, Vector2 closest) 
         {
             int x_norm = x / 20;
             int y_norm = y / 20;
@@ -75,18 +101,23 @@ namespace MineSweeper
                 {
                     if (x_norm == (int)(v.X / 20) && y_norm == (int)(v.Y / 20) && v.X == closest.X && v.Y == closest.Y)
                     {
-                        Random r = new Random();
-                        int x_n = r.Next(0, Width);
-                        int y_n = r.Next(0, Height);
-                        ground[y_n, x_n] = "r";
-                        ground[y_norm, x_norm] = "g";
+                        Randomize(x_norm, y_norm, DOTS.RED);
                         red_dots = null;
                         last_collision = new Vector2(x_norm, y_norm);
-                        return true;
+                        Reset = true;
+                        return;
                     }
                 }
             }
-            return false;
+            //Reset = false;
+        }
+        private void Randomize(int old_x, int old_y, DOTS d) 
+        {
+            Random r = new Random();
+            int x_n = r.Next(0, Width);
+            int y_n = r.Next(0, Height);
+            ground[y_n, x_n] = d == DOTS.RED ? "r" : "b";
+            ground[old_y, old_x] = "g";
         }
 
         public void Load(ContentManager Content) 
@@ -100,6 +131,40 @@ namespace MineSweeper
             //position_blue = new Vector2(60f, 0f);
 
             red_dots = RedPositions;
+            blue_dots = BluePositions;
+        }
+        public void Update()
+        {
+            // TODO: Add your update logic here
+            currentState = Keyboard.GetState();
+            if (currentState.IsKeyDown(Keys.G))
+            {
+                Random rand = new Random();
+                int count = RedPositions.Count;
+                foreach (Vector2 v in RedPositions)
+                {
+                    Randomize((int)(v.X / 20), (int)(v.Y / 20), DOTS.RED);
+                    red_dots = null;
+                    Reset = true;
+                }
+                while (RedPositions.Count < 3)
+                {
+                    red_dots = null;
+                    Randomize((int)(rand.Next(0, Width) / 20), (int)(rand.Next(0, Height) / 20), DOTS.RED);
+                }
+
+                foreach (Vector2 v in BluePositions)
+                {
+                    Randomize((int)(v.X / 20), (int)(v.Y / 20), DOTS.BLUE);
+                    blue_dots = null;
+                    Reset = true;
+                }
+                while (BluePositions.Count < 3)
+                {
+                    blue_dots = null;
+                    Randomize((int)(rand.Next(0, Width) / 20), (int)(rand.Next(0, Height) / 20), DOTS.BLUE);
+                }
+            }
         }
         public void Draw(SpriteBatch spriteBatch) 
         {

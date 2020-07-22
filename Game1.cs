@@ -13,6 +13,8 @@ namespace MineSweeper
         Ground g;
         Tank t;
 
+        public enum DOTS { RED, BLUE }
+
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -40,17 +42,22 @@ namespace MineSweeper
 
         protected override void Update(GameTime gameTime)
         {
+            base.Update(gameTime);
+
+            // TODO: Add your update logic here
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-            // TODO: Add your update logic here
+            this.TargetElapsedTime = TimeSpan.FromSeconds(1.0f / 100.0f);
+            g.Update();
             t.Update();
 
-            base.Update(gameTime);
         }
 
         protected override void Draw(GameTime gameTime)
         {
+            base.Draw(gameTime);
+
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             // TODO: Add your drawing code here
@@ -59,8 +66,6 @@ namespace MineSweeper
             t.Draw(spriteBatch);
             
             spriteBatch.End();
-
-            base.Draw(gameTime);
         }
     }
 }
